@@ -5,29 +5,27 @@ import sys
 from PIL import Image
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
-from tensorflow.keras.models import load_model
 from werkzeug.utils import secure_filename
+import requests
+import base64
+from io import BytesIO
+from flask_cors import CORS
+import time
 
-# Suppress TensorFlow logging
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # 0 = all messages, 1 = filter out INFO, 2 = filter out WARNING, 3 = filter out ERROR
-
-# initialization
+# initializing
 load_dotenv()
 app = Flask(__name__)
+CORS(app) # cors for interaction
 
-# loading the model locally
+# loading random forest model
 try:
-    print("Loading CNN model...")
-    cnn_model = load_model("models/spinach_disease_classifier.h5")
-    print("CNN model loaded successfully.")
-
     print("Loading Random Forest model...")
     with open("models/random_forest_final_model.pkl", "rb") as f:
         ml_model = pickle.load(f)
     print("Random Forest model loaded successfully.")
 except Exception as e:
-    print(f"FATAL: Error loading models from the 'models' folder. Error: {e}")
-    sys.exit("Stopping server due to model loading failure.")
+    print(f"FATAL: Error loading ML model. Error: {e}")
+    ml_model = None
 
 # routes
 @app.route("/")
@@ -42,22 +40,28 @@ def dashboard():
 
 @app.route("/predict_cnn", methods=["POST"])
 def predict_cnn():
-    if not cnn_model: return jsonify({"error": "CNN model is not loaded"}), 503
-    if "file" not in request.files: return jsonify({"error": "No file part in the request"}), 400
+    # huggingface url
+    HF_API_URL = "https://akshat281204-hydroponic-cnn.hf.space/predict"
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+    
     file = request.files["file"]
-    if file.filename == '': return jsonify({"error": "No image selected for uploading"}), 400
+    if file.filename == '':
+        return jsonify({"error": "No image selected for uploading"}), 400
+
     try:
-        img = Image.open(file.stream).convert("RGB").resize((224, 224))
-        img_array = np.array(img).astype('float32') / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
-        prediction = cnn_model.predict(img_array)
-        predicted_class_index = int(np.argmax(prediction))
+        buffered = BytesIO()
+        Image.open(file.stream).save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        payload = {"data": f"data:image/jpeg;base64,{img_str}"}
+        response = requests.post(HF_API_URL, json=payload)
+        response.raise_for_status()
+        prediction_data = response.json()
+        return jsonify(prediction_data)
         
-        class_names = ['Leaf Spot', 'Healthy', 'Mite Damage']
-        predicted_class_name = class_names[predicted_class_index]
-        return jsonify({"prediction": predicted_class_name})
     except Exception as e:
-        print(f"Error during CNN prediction: {e}")
+        print(f"Error during CNN prediction via Hugging Face: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/predict_ml", methods=["POST"])
@@ -79,6 +83,6 @@ def predict_ml():
         print(f"Error during ML prediction: {e}")
         return jsonify({"error": str(e)}), 500
 
-# This block is for local development. For production, Gunicorn will run the app.
+# local dev
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=os.getenv("PORT", 5000))
+    app.run(debug=True)

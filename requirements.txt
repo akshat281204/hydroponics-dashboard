@@ -1,5 +1,4 @@
 Flask
-tensorflow-cpu
 scikit-learn
 Pillow
 python-dotenv
@@ -8,3 +7,4 @@ numpy
 werkzeug
 imbalanced-learn
 gunicorn
+Flask-Cors
