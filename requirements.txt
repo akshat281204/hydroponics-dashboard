@@ -1,0 +1,10 @@
+Flask
+tensorflow-cpu
+scikit-learn
+Pillow
+python-dotenv
+requests
+numpy
+werkzeug
+imbalanced-learn
+gunicorn

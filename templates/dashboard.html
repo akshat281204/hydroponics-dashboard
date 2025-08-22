@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Hydroponics Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="background-animation">
+        <div class="floating-particles"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🌱</div>
+                    <h1>Smart Hydroponics Dashboard</h1>
+                </div>
+                <div class="status-indicator">
+                    <div class="pulse-dot"></div>
+                    <span id="lastUpdate">System Online</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Security Section -->
+        <section class="glass-card security-section">
+            <div class="section-header">
+                <div class="section-icon">🛡️</div>
+                <h2>Security Monitoring</h2>
+                <div class="section-badge">Live</div>
+            </div>
+            <div class="security-grid">
+                <div class="security-card" id="motionCard">
+                    <div class="card-icon">🏃🏽</div>
+                    <div class="card-content">
+                        <h3>Motion Detection</h3>
+                        <div class="status-value" id="motionStatus">--</div>
+                        <div class="status-bar">
+                            <div class="status-fill" id="motionBar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="security-card" id="soundCard">
+                    <div class="card-icon">🔊</div>
+                    <div class="card-content">
+                        <h3>Sound Level</h3>
+                        <div class="status-value" id="soundStatus">--</div>
+                        <div class="status-bar">
+                            <div class="status-fill" id="soundBar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="security-card" id="intruderCard">
+                    <div class="card-icon">⚠️</div>
+                    <div class="card-content">
+                        <h3>Intruder Alert</h3>
+                        <div class="status-value" id="intruderStatus">--</div>
+                        <div class="status-bar">
+                            <div class="status-fill" id="intruderBar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Environmental Monitoring -->
+        <section class="glass-card environmental-section">
+            <div class="section-header">
+                <div class="section-icon">🌡️</div>
+                <h2>Environmental Control</h2>
+                <div class="section-badge">Active</div>
+            </div>
+            <div class="environmental-grid">
+                <div class="gauge-container">
+                    <h3>Water Temperature</h3>
+                    <div class="gauge-wrapper">
+                        <canvas id="temperatureGauge" width="180" height="180"></canvas>
+                        <div class="gauge-value" id="tempValue">--°C</div>
+                        <div class="gauge-status" id="tempStatus">Normal</div>
+                    </div>
+                </div>
+                <div class="gauge-container">
+                    <h3>pH Level</h3>
+                    <div class="gauge-wrapper">
+                        <canvas id="phGauge" width="180" height="180"></canvas>
+                        <div class="gauge-value" id="phValue">--</div>
+                        <div class="gauge-status" id="phStatus">Optimal</div>
+                    </div>
+                </div>
+                <div class="gauge-container">
+                    <h3>EC Level</h3>
+                    <div class="gauge-wrapper">
+                        <canvas id="ecGauge" width="180" height="180"></canvas>
+                        <div class="gauge-value" id="ecValue">-- μS/cm</div>
+                        <div class="gauge-status" id="ecStatus">Good</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Water Quality & Level -->
+        <div class="dual-section">
+            <section class="glass-card water-quality">
+                <div class="section-header">
+                    <div class="section-icon">💧</div>
+                    <h2>Water Quality</h2>
+                    <div class="section-badge">Monitoring</div>
+                </div>
+                <div class="gauge-container">
+                    <h3>TDS Level</h3>
+                    <div class="gauge-wrapper">
+                        <canvas id="tdsGauge" width="180" height="180"></canvas>
+                        <div class="gauge-value" id="tdsValue">-- ppm</div>
+                        <div class="gauge-status" id="tdsStatus">Excellent</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="glass-card water-level">
+                <div class="section-header">
+                    <div class="section-icon">🌊</div>
+                    <h2>Water Level</h2>
+                    <div class="section-badge">Critical</div>
+                </div>
+                <div class="water-tank-container">
+                    <div class="water-tank">
+                        <div class="water-fill" id="waterFill"></div>
+                        <div class="water-bubbles">
+                            <div class="bubble"></div>
+                            <div class="bubble"></div>
+                            <div class="bubble"></div>
+                        </div>
+                        <div class="tank-markers">
+                            <div class="marker" style="top: 20%;">80%</div>
+                            <div class="marker" style="top: 40%;">60%</div>
+                            <div class="marker" style="top: 60%;">40%</div>
+                            <div class="marker" style="top: 80%;">20%</div>
+                        </div>
+                    </div>
+                    <div class="water-stats">
+                        <div class="stat">
+                            <span class="stat-label">Current Level</span>
+                            <span class="stat-value" id="waterPercentage">--%</span>
+                        </div>
+                        <div class="progress-ring">
+                            <svg class="progress-ring-svg" width="80" height="80">
+                                <circle class="progress-ring-circle-bg" cx="40" cy="40" r="30"></circle>
+                                <circle class="progress-ring-circle" cx="40" cy="40" r="30" id="waterProgress"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Camera & AI Section -->
+        <div class="dual-section">
+            <section class="glass-card camera-section">
+                <div class="section-header">
+                    <div class="section-icon">📹</div>
+                    <h2>Visual Monitoring</h2>
+                    <div class="section-badge">Offline</div>
+                </div>
+                <div class="camera-grid">
+                    <div class="camera-feed">
+                        <div class="feed-placeholder">
+                            <div class="camera-icon">📹</div>
+                            <h4>Live Stream</h4>
+                            <p>Coming Soon</p>
+                            <div class="loading-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="camera-feed">
+                        <div class="feed-placeholder">
+                            <div class="camera-icon">📷</div>
+                            <h4>ESP32 Camera</h4>
+                            <p>Initializing...</p>
+                            <div class="loading-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="glass-card ai-section">
+                <div class="section-header">
+                    <div class="section-icon">🤖</div>
+                    <h2>AI Analysis</h2>
+                    <div class="section-badge">Under Maintenance</div>
+                </div>
+                <div class="ai-grid">
+                    <div class="ai-card" id="diseaseCard">
+                        <div class="ai-icon">🔬</div>
+                        <h4>Disease Detection</h4>
+                        <p>Upload plant image for analysis</p>
+                        <button type="button" class="ai-button">
+                            <span>Upload Image</span>
+                            <div class="button-glow"></div>
+                        </button>
+                        <input type="file" id="diseaseImageInput" accept="image/*" style="display: none;">
+                        <div class="ai-result" id="diseaseResult"></div>
+                    </div>
+                    <div class="ai-card" id="growthCard">
+                        <div class="ai-icon">📈</div>
+                        <h4>Growth Prediction</h4>
+                        <p>AI-powered growth analysis</p>
+                        <button class="ai-button">
+                            <span>Analyze Growth</span>
+                            <div class="button-glow"></div>
+                        </button>
+                        <div class="ai-result" id="growthResult"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+    <script>
+        const firebaseConfig = {{ firebase_config | tojson }};
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</html>
