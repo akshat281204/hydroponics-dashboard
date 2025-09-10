@@ -96,6 +96,28 @@ function updateSensorData(data) {
         phStatus.textContent = "Optimal";
         phStatus.className = 'gauge-status optimal';
     }
+
+    const ec = data.ec || 0;
+    updateGauge(ecGauge, ec, 3000, 'ecValue', ' μS/cm');
+    const ecStatus = document.getElementById('ecStatus');
+    if (ec < 1500 || ec > 2500) {
+        ecStatus.textContent = "Suboptimal";
+        ecStatus.className = 'gauge-status warning';
+    } else {
+        ecStatus.textContent = "Good";
+        ecStatus.className = 'gauge-status optimal';
+    }
+
+    const tds = data.tds || 0;
+    updateGauge(tdsGauge, tds, 2000, 'tdsValue', ' ppm');
+    const tdsStatus = document.getElementById('tdsStatus');
+    if (tds < 750 || tds > 1250) {
+        tdsStatus.textContent = "Suboptimal";
+        tdsStatus.className = 'gauge-status warning';
+    } else {
+        tdsStatus.textContent = "Excellent";
+        tdsStatus.className = 'gauge-status optimal';
+    }
     
     updateGauge(ecGauge, data.ec, 3000, 'ecValue', ' μS/cm');
     updateGauge(tdsGauge, data.tds, 2000, 'tdsValue', ' ppm');
