@@ -1,27 +1,35 @@
-// ================= FIREBASE SETUP (CDN IMPORTS) =================
-// Import specific functions from the Firebase CDN URLs
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+const app = firebase.initializeApp(firebaseConfig);
+const database = app.database();        
 
-// Initialize Firebase and get a reference to the database
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-
-// ================= GLOBAL VARIABLES =================
 let temperatureGauge, phGauge, ecGauge, tdsGauge;
-let latestData = {}; // store last Firebase snapshot for ML predictions
+let latestData = {}; 
 
-// ================= INITIALIZATION =================
+let cocoSsdModel = undefined;
+const PERSON_CLASS = 'person';
+const DETECTION_THRESHOLD = 0.6; 
+let videoElement = null;
+let snapshotElement = null;
+let intruderAlertDiv = null; 
+let detectionContext = null; 
+
 document.addEventListener('DOMContentLoaded', function () {
+    videoElement = document.getElementById('videoElement');
+    snapshotElement = document.getElementById('snapshotElement');
+    intruderAlertDiv = document.getElementById('intruder-alert');
+    
+    const canvas = document.getElementById('detectionCanvas');
+    detectionContext = canvas.getContext('2d');
+
     initializeGauges();
     startDataListening();
     setupEventListeners();
     updateTimestamp();
     setInterval(updateTimestamp, 3000);
-    createFloatingParticles(); // Added from script.js
+    createFloatingParticles(); 
+    
+    startIntruderDetection(); 
 });
 
-// ================= GAUGES =================
 function initializeGauges() {
     temperatureGauge = createGauge('temperatureGauge', 0, 50, '°C', '#e74c3c');
     phGauge = createGauge('phGauge', 0, 14, 'pH', '#f39c12');
@@ -40,17 +48,16 @@ function createGauge(canvasId, min, max, unit, color) {
 
 function updateGauge(gauge, value, max, elementId, unit) {
     if (value === undefined || value === null || isNaN(value)) {
-        value = 0; // Default to 0 if data is invalid
+        value = 0; 
     }
     gauge.data.datasets[0].data = [value, max - value];
     gauge.update('none');
     document.getElementById(elementId).textContent = `${parseFloat(value).toFixed(1)}${unit}`;
 }
 
-// ================= REAL-TIME DATA HANDLING =================
 function startDataListening() {
-    const dataRef = ref(database, 'data'); // Create a reference to the 'data' path
-    onValue(dataRef, (snapshot) => {
+    const dataRef = database.ref('data'); 
+    dataRef.on('value', (snapshot) => { 
         const data = snapshot.val();
         if (data) {
             latestData = data;
@@ -126,7 +133,7 @@ function updateSensorData(data) {
 function updateSecurityStatus(motion, sound) {
     updateSecurityCard('motion', motion);
     updateSecurityCard('sound', sound);
-    updateSecurityCard('intruder', motion && sound);
+    updateSecurityCard('intruder', motion && sound); 
 }
 
 function updateSecurityCard(type, isDetected) {
@@ -159,7 +166,80 @@ function updateWaterLevel(level) {
     waterPercentage.textContent = `${level.toFixed(0)}%`;
 }
 
-// ================= EVENT LISTENERS & AI =================
+async function startIntruderDetection() {
+    if (!snapshotElement || !intruderAlertDiv) {
+        console.error("Snapshot element or alert element not found. Intruder detection cannot start.");
+        return;
+    }
+    loadModelAndStartLoop();
+}
+
+async function loadModelAndStartLoop() {
+    if (typeof cocoSsd === 'undefined') {
+        console.error("TensorFlow.js (coco-ssd) is not loaded. Check your HTML <script> tags.");
+        intruderAlertDiv.textContent = 'ML Model Not Found';
+        intruderAlertDiv.classList.add('alert-visible', 'safe-overlay'); 
+        return;
+    }
+
+    console.log('Loading COCO-SSD model...');
+    cocoSsdModel = await cocoSsd.load();
+    console.log('Model loaded. Starting image analysis...');
+
+    detectFrame();
+}
+
+function detectFrame() {
+    if (cocoSsdModel && snapshotElement) {
+        
+        snapshotElement.src = 'http://10.99.56.146:8080/shot.jpg?' + new Date().getTime();
+
+        snapshotElement.onload = function() {
+            detectionContext.drawImage(
+                snapshotElement, 
+                0, 
+                0, 
+                snapshotElement.width, 
+                snapshotElement.height
+            );
+            
+            cocoSsdModel.detect(detectionContext.canvas).then(predictions => {
+                let personDetected = false;
+
+                for (let i = 0; i < predictions.length; i++) {
+                    if (predictions[i].class === PERSON_CLASS && 
+                        predictions[i].score > DETECTION_THRESHOLD) {
+                        
+                        personDetected = true;
+                        break; 
+                    }
+                }
+
+                if (personDetected) {
+                    intruderAlertDiv.textContent = 'INTRUDER DETECTED';
+                    intruderAlertDiv.classList.add('alert-visible');
+                    intruderAlertDiv.classList.remove('safe-overlay'); 
+                } else {
+                    intruderAlertDiv.classList.remove('alert-visible'); 
+                }
+                
+                setTimeout(detectFrame, 500); 
+            }).catch(error => {
+                console.error("Detection error:", error);
+                setTimeout(detectFrame, 500); 
+            });
+        };
+        
+        snapshotElement.onerror = function() {
+             console.error("Snapshot loading failed. Camera may be offline.");
+             setTimeout(detectFrame, 2000); 
+        };
+
+    } else {
+        setTimeout(detectFrame, 1000);
+    }
+}
+
 function setupEventListeners() {
     document.getElementById('diseaseImageInput').addEventListener('change', handleDiseaseImageUpload);
     document.querySelector("#growthCard .ai-button").addEventListener("click", generateGrowthPrediction);
@@ -172,7 +252,7 @@ function handleDiseaseImageUpload(event) {
 
     const resultElement = document.getElementById('diseaseResult');
     resultElement.style.display = 'block';
-    resultElement.className = 'ai-result'; // Reset classes
+    resultElement.className = 'ai-result'; 
     resultElement.innerText = 'Analyzing...';
 
     const formData = new FormData();
@@ -249,7 +329,6 @@ async function generateGrowthPrediction() {
     }
 }
 
-// ================= UTILITIES =================
 function createFloatingParticles() {
     const container = document.querySelector('.floating-particles');
     if (!container) return;

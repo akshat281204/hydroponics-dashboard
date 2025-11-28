@@ -6,7 +6,18 @@
     <title>Smart Hydroponics Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>  
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script> 
+    
+    <script>
+        const firebaseConfig = {{ firebase_config | tojson }};
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </head>
 <body>
     <div class="background-animation">
@@ -126,7 +137,7 @@
                 <div class="section-header">
                     <div class="section-icon">🌊</div>
                     <h2>Water Level</h2>
-                    <div class="section-badge">Critical</div>
+                    <div class="section-badge">Monitoring</div>
                 </div>
                 <div class="water-tank-container">
                     <div class="water-tank">
@@ -165,37 +176,33 @@
                 <div class="section-header">
                     <div class="section-icon">📹</div>
                     <h2>Visual Monitoring</h2>
-                    <div class="section-badge">Offline</div>
+                    <div class="section-badge">Live</div>
                 </div>
+                
                 <div class="camera-grid">
-                    <div class="camera-feed">
-                        <div class="feed-placeholder">
-                            <!-- <img 
-                                src="https://flying-redfish-informally.ngrok-free.app/stream" 
-                                width="640" 
-                                height="480" 
-                                alt="Live Camera Stream"
-                            /> -->
+                    <div class="camera-feed-container">
+                        <div class="camera-feed">
                             <img 
+                                id="videoElement" 
                                 src="http://10.99.56.146:8080/video" 
                                 width="640" 
                                 height="480" 
                                 alt="Live Camera Stream"
                             />
+                            <img 
+                                id="snapshotElement" 
+                                crossorigin="anonymous" 
+                                style="display: none;" 
+                                width="640" 
+                                height="480" 
+                                alt="ML Snapshot Source"
+                            />
+                            <canvas id="detectionCanvas" width="640" height="480" style="display: none;"></canvas>
                         </div>
+                        <div id="intruder-alert" class="alert-overlay">
+                            INTRUDER DETECTED
+                        </div> 
                     </div>
-                    <!-- <div class="camera-feed">
-                        <div class="feed-placeholder">
-                            <div class="camera-icon">📷</div>
-                            <h4>ESP32 Camera</h4>
-                            <p>Initializing...</p>
-                            <div class="loading-dots">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                        </div>
-                    </div> -->
                 </div>
             </section>
 
@@ -203,7 +210,7 @@
                 <div class="section-header">
                     <div class="section-icon">🤖</div>
                     <h2>AI Analysis</h2>
-                    <div class="section-badge">Under Maintenance</div>
+                    <div class="section-badge">Deployed</div>
                 </div>
                 <div class="ai-grid">
                     <div class="ai-card" id="diseaseCard">
@@ -219,10 +226,10 @@
                     </div>
                     <div class="ai-card" id="growthCard">
                         <div class="ai-icon">📈</div>
-                        <h4>Growth Prediction</h4>
-                        <p>AI-powered growth analysis</p>
+                        <h4>Environment Prediction</h4>
+                        <p>AI-powered environment analysis</p>
                         <button class="ai-button">
-                            <span>Analyze Growth</span>
+                            <span>Analyze Environment</span>
                             <div class="button-glow"></div>
                         </button>
                         <div class="ai-result" id="growthResult"></div>
@@ -231,8 +238,4 @@
             </section>
         </div>
     </div>
-    <script>
-        const firebaseConfig = {{ firebase_config | tojson }};
-    </script>
-    <script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </html>

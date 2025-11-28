@@ -4,7 +4,7 @@ import numpy as np
 import sys
 from PIL import Image
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from werkzeug.utils import secure_filename
 import requests
 import base64
@@ -12,12 +12,12 @@ from io import BytesIO
 from flask_cors import CORS
 import time
 
-# initializing
+CAMERA_URL = "http://10.99.56.146:8080/video"
+
 load_dotenv()
 app = Flask(__name__)
-CORS(app) # cors for interaction
+CORS(app)
 
-# loading random forest model
 try:
     print("Loading Random Forest model...")
     with open("models/random_forest_final_model.pkl", "rb") as f:
@@ -27,7 +27,30 @@ except Exception as e:
     print(f"FATAL: Error loading ML model. Error: {e}")
     ml_model = None
 
-# routes
+@app.route('/camera_proxy')
+def camera_proxy():
+    try:
+        r = requests.get(CAMERA_URL, stream=True, timeout=5) 
+        r.raise_for_status()
+        mimetype = r.headers.get('Content-Type', 'image/jpeg') 
+        
+        def generate():
+            for chunk in r.iter_content(chunk_size=1024):
+                yield chunk
+                
+        return Response(generate(), mimetype=mimetype)
+
+    except requests.exceptions.ConnectionError:
+        print("Proxy Error: Could not connect to camera stream.")
+        return Response("Camera stream unavailable.", status=503, mimetype='text/plain')
+    
+    except requests.exceptions.RequestException as e:
+        print(f"Proxy Request Error: {e}")
+        return Response("Proxy failed to fetch stream.", status=500, mimetype='text/plain')
+    except Exception as e:
+        print(f"Unexpected Proxy Error: {e}")
+        return Response("Unexpected server error in proxy.", status=500, mimetype='text/plain')
+
 @app.route("/")
 def dashboard():
     firebase_config = {
@@ -40,7 +63,6 @@ def dashboard():
 
 @app.route("/predict_cnn", methods=["POST"])
 def predict_cnn():
-    # huggingface url
     HF_API_URL = "https://akshat281204-hydroponic-cnn.hf.space/predict"
 
     if "file" not in request.files:
@@ -83,6 +105,5 @@ def predict_ml():
         print(f"Error during ML prediction: {e}")
         return jsonify({"error": str(e)}), 500
 
-# local dev
 if __name__ == "__main__":
     app.run(debug=True)
