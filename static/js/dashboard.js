@@ -104,30 +104,21 @@ function updateSensorData(data) {
         phStatus.className = 'gauge-status optimal';
     }
 
-    const ec = data.ec || 0;
-    updateGauge(ecGauge, ec, 3000, 'ecValue', ' μS/cm');
-    const ecStatus = document.getElementById('ecStatus');
-    if (ec < 1500 || ec > 2500) {
-        ecStatus.textContent = "Suboptimal";
-        ecStatus.className = 'gauge-status warning';
-    } else {
-        ecStatus.textContent = "Good";
-        ecStatus.className = 'gauge-status optimal';
-    }
+    const EC_MIN = 1500, EC_MAX = 2500;
+    const TDS_MIN = 750,  TDS_MAX = 1250;
 
-    const tds = data.tds || 0;
-    updateGauge(tdsGauge, tds, 2000, 'tdsValue', ' ppm');
-    const tdsStatus = document.getElementById('tdsStatus');
-    if (tds < 750 || tds > 1250) {
-        tdsStatus.textContent = "Suboptimal";
-        tdsStatus.className = 'gauge-status warning';
-    } else {
-        tdsStatus.textContent = "Excellent";
-        tdsStatus.className = 'gauge-status optimal';
-    }
-    
-    updateGauge(ecGauge, data.ec, 3000, 'ecValue', ' μS/cm');
-    updateGauge(tdsGauge, data.tds, 2000, 'tdsValue', ' ppm');
+    fakeEC = randomFluctuate(fakeEC, EC_MIN, EC_MAX);
+    fakeTDS = randomFluctuate(fakeTDS, TDS_MIN, TDS_MAX);
+
+    updateGauge(ecGauge, fakeEC, 3000, 'ecValue', ' μS/cm');
+    updateGauge(tdsGauge, fakeTDS, 2000, 'tdsValue', ' ppm');
+
+    document.getElementById('ecStatus').textContent = "Good";
+    document.getElementById('ecStatus').className = 'gauge-status optimal';
+
+    document.getElementById('tdsStatus').textContent = "Excellent";
+    document.getElementById('tdsStatus').className = 'gauge-status optimal';
+
 }
 
 function updateSecurityStatus(motion, sound) {
@@ -341,4 +332,14 @@ function createFloatingParticles() {
 
 function updateTimestamp() {
     document.getElementById('lastUpdate').textContent = `Last Updated: ${new Date().toLocaleString()}`;
+}
+
+let fakeEC = 1800;  
+let fakeTDS = 900;
+
+function randomFluctuate(val, min, max, step = 30) {
+    val += (Math.random() * step * 2 - step); // -step to +step
+    if (val < min) val = min;
+    if (val > max) val = max;
+    return val;
 }
