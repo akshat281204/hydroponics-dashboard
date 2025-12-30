@@ -183,7 +183,7 @@ async function loadModelAndStartLoop() {
 function detectFrame() {
     if (cocoSsdModel && snapshotElement) {
         
-        snapshotElement.src = 'http://10.99.56.146:8080/shot.jpg?' + new Date().getTime();
+        snapshotElement.src = 'http://10.202.121.146:8080/shot.jpg?' + new Date().getTime();
 
         snapshotElement.onload = function() {
             detectionContext.drawImage(
