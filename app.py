@@ -12,7 +12,7 @@ from io import BytesIO
 from flask_cors import CORS
 import time
 
-CAMERA_URL = "http://10.99.56.146:8080/video"
+CAMERA_URL = "http://10.202.121.146:8080/video"
 
 load_dotenv()
 app = Flask(__name__)
@@ -106,4 +106,5 @@ def predict_ml():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # app.run(debug=True)
+    app.run(debug=True, use_reloader=False, threaded=True)
